@@ -1,0 +1,26 @@
+# Postgres for the Veloce-TS backend. No legacy SQL init mounts — the schema is
+# owned by Drizzle migrations (`bun run db:migrate`). Host port 5433 matches the
+# root compose, so run only ONE of them at a time.
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: citas_veloce_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: medical_appointments
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - citas_veloce_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d medical_appointments"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  citas_veloce_pgdata:
+    driver: local
