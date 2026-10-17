@@ -11,12 +11,15 @@ import { AppointmentsPage } from '@/features/appointments/appointments'
 import { ProfilePage } from '@/features/profile/profile'
 import { MedicalHistoryPage } from '@/features/patients/medical-history'
 import { AdminPage } from '@/features/admin/admin'
+import { DemoEntryPage } from '@/features/demo/demo-entry'
 
 export default function App() {
   return (
     <Routes>
       {/* Public */}
       <Route path="/" element={<HomePage />} />
+      {/* Entrada de la demostración: pide sesión y aterriza según el rol. */}
+      <Route path="/demo" element={<DemoEntryPage />} />
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

@@ -63,6 +63,10 @@ export interface Doctor {
   licenseNumber: string | null
   phone: string | null
   address: string | null
+  // Coordenadas del consultorio. Admiten nulo: un doctor viejo puede no estar
+  // geocodificado, y entonces el mapa simplemente no lo dibuja.
+  latitude: string | null
+  longitude: string | null
   availableHours: string[] | null
   consultationFee: string | null
 }

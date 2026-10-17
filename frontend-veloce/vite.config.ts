@@ -20,6 +20,12 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      // La consola del portafolio arranca preguntando si la API vive, así que
+      // /health también tiene que llegar al backend y no a la SPA.
+      '/health': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
     },
   },
 })

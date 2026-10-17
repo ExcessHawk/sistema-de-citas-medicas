@@ -1,386 +1,134 @@
-# 🏥 Sistema de Citas Médicas
+# Sistema de citas médicas
 
-> ⚠️ **ADVERTENCIA**: Este proyecto está en fase **PRE-ALPHA**. Solo las funcionalidades básicas de pacientes están operativas. No está listo para uso en producción.
+Agenda clínica: el paciente busca especialista, ve dónde queda el consultorio en
+el mapa y reserva; el doctor atiende y registra el historial; el administrador
+vigila el conjunto.
 
-Un sistema completo de gestión de citas médicas desarrollado con **React** (frontend) y **Node.js** (backend), con base de datos **PostgreSQL** y contenedores **Docker**.
+Backend en **Bun sobre Veloce-TS** con Drizzle y PostgreSQL. Frontend en **React
+19 + Vite** con Tailwind y React Query.
 
-## 📋 Descripción
+## Qué hace
 
-Este sistema permite la gestión integral de citas médicas entre pacientes y doctores, incluyendo:
+**El paciente** se registra, busca por nombre o especialidad, ve los
+consultorios en un mapa, reserva un horario libre, consulta sus citas pasadas y
+próximas, lee su historial médico y recibe aviso por correo.
 
-- **Registro y autenticación** de usuarios (pacientes y doctores)
-- **Gestión de citas** con programación, confirmación y cancelación
-- **Historial médico** completo de pacientes
-- **Seguimientos médicos** y recordatorios
-- **Documentos médicos** (prescripciones, reportes, etc.)
-- **Panel de administración** para gestión del sistema
-- **Notificaciones por email** automáticas
+**El doctor** se registra con número de cédula, publica sus horarios, atiende lo
+agendado, escribe el historial de cada consulta, abre seguimientos y sube
+documentos.
 
-## 🏗️ Arquitectura del Sistema
+**El administrador** ve las estadísticas de la clínica y administra usuarios y
+doctores.
 
-### Frontend (React)
-- **React 18** con hooks y context API
-- **React Router** para navegación
-- **Tailwind CSS** para estilos
-- **Axios** para comunicación con API (configurado con interceptores)
-- **React Hook Form** para formularios
-- **Lucide React** para iconos
-- **React Hot Toast** para notificaciones
+## Cómo está construido
 
-### Backend (Node.js)
-- **Express.js** como framework web
-- **JWT** para autenticación
-- **bcryptjs** para encriptación de contraseñas
-- **express-validator** para validación de datos
-- **nodemailer** para envío de emails
-- **multer** para manejo de archivos
-- **node-cron** para tareas programadas
+| | |
+|---|---|
+| Rutas HTTP | 32, repartidas en 6 controladores |
+| Tablas | 7: usuarios, doctores, citas, historial, seguimientos, documentos y padecimientos |
+| Autenticación | JWT, con `@Roles` sobre las rutas y comprobación de pertenencia dentro del handler |
+| Mapa | Leaflet sobre OpenStreetMap |
+| Correo | Nodemailer, con recordatorios diarios a las 08:00 |
 
-### Base de Datos
-- **PostgreSQL** como base de datos principal
-- **Docker** para contenerización
-- **pgAdmin** para administración de BD
+Decisiones que vale la pena conocer:
 
-### Infraestructura
-- **Docker Compose** para orquestación de servicios
-- **Concurrently** para ejecutar frontend y backend simultáneamente
+- **Un horario no se puede reservar dos veces.** Un índice único sobre
+  `(doctor, fecha, hora)` lo impide en la base, no solo en el código.
+- **La pertenencia se comprueba en cada handler**, no solo el rol: un doctor
+  tiene rol de doctor, pero eso no lo autoriza a leer la cita de otro.
+- **El mapa es Leaflet, no Google Maps.** Google pide llave con facturación
+  activa, y esa llave viajaría en el JavaScript del navegador. OpenStreetMap no
+  pide nada.
+- **Las coordenadas admiten nulo.** Un consultorio sin geocodificar no rompe el
+  mapa: no se dibuja, y la interfaz lo dice.
 
-## 🗄️ Estructura de la Base de Datos
-
-### Tablas Principales
-- **users**: Información básica de usuarios (pacientes, doctores, admin)
-- **doctors**: Perfiles específicos de doctores (especialidad, licencia, tarifas)
-- **appointments**: Citas médicas programadas
-- **patient_medical_history**: Historial médico completo
-- **medical_follow_ups**: Seguimientos médicos
-- **medical_documents**: Documentos médicos (prescripciones, reportes)
-- **patient_conditions**: Alergias y condiciones médicas
-
-### Características de la BD
-- **Triggers automáticos** para actualización de timestamps
-- **Índices optimizados** para consultas frecuentes
-- **Vistas predefinidas** para reportes comunes
-- **Restricciones de integridad** referencial
-
-## 👨‍⚕️ Doctores Disponibles
-
-El sistema incluye **10 doctores** con diferentes especialidades:
-
-### Doctores Originales
-1. **Dr. María González** - Cardiología ($1,600.00 MXN)
-2. **Dr. Carlos Rodríguez** - Dermatología ($1,400.00 MXN)
-3. **Dr. Ana Martínez** - Pediatría ($1,200.00 MXN)
-4. **Dr. Luis Fernández** - Ortopedia ($1,500.00 MXN)
-5. **Dr. Carmen López** - Ginecología ($1,700.00 MXN)
-
-### Doctores Agregados
-6. **Dr. Roberto Silva** - Neurología ($1,800.00 MXN)
-7. **Dr. Patricia Morales** - Psicología ($1,300.00 MXN)
-8. **Dr. Javier Ruiz** - Oftalmología ($1,500.00 MXN)
-9. **Dr. Isabel Vargas** - Endocrinología ($1,600.00 MXN)
-10. **Dr. Manuel Torres** - Urología ($1,700.00 MXN)
-
-**Credenciales de acceso para todos los doctores:**
-- **Contraseña:** `admin123`
-
-## 🚀 Funcionalidades Principales
-
-### Para Pacientes
-- ✅ Registro y login seguro
-- ✅ Buscar doctores por especialidad
-- ✅ Programar citas médicas desde la vista de doctores
-- ✅ Ver historial médico personal
-- ✅ Recibir notificaciones por email
-- ✅ Gestionar perfil personal
-- ✅ Ver citas programadas y pasadas
-
-### Para Doctores
-- ✅ Registro con validación de licencia
-- ✅ Configurar horarios disponibles
-- ✅ Gestionar citas programadas
-- ✅ Registrar historial médico de pacientes
-- ✅ Crear seguimientos médicos
-- ✅ Subir documentos médicos
-
-### Para Administradores
-- ✅ Panel de administración completo
-- ✅ Gestión de usuarios y doctores
-- ✅ Reportes y estadísticas
-- ✅ Configuración del sistema
-
-## 🛠️ Instalación y Configuración
-
-> ⚠️ **Nota**: Este es un proyecto en desarrollo. Solo las funcionalidades básicas de pacientes están operativas. Los roles de doctores y administradores no están completamente implementados.
-
-### Prerrequisitos
-- Node.js (v16 o superior)
-- Docker y Docker Compose
-- Git
-
-### Instalación Rápida
-```bash
-# Clonar el repositorio
-git clone https://github.com/AlfredoMejia3001/sistema-de-citas-medicas.git
-cd sistema-de-citas-medicas
-
-# Configurar todo automáticamente
-npm run setup
-
-# Iniciar el sistema
-npm run dev
-```
-
-### Instalación Manual
-```bash
-# 1. Levantar servicios de Docker
-npm run docker:up
-
-# 2. Instalar dependencias
-npm run install:all
-
-# 3. Iniciar desarrollo
-npm run dev
-```
-
-## 📁 Estructura del Proyecto
-
-```
-sistema-de-citas-medicas/
-├── backend/                 # API Node.js
-│   ├── apps/               # Módulos de la aplicación
-│   │   ├── auth/          # Autenticación
-│   │   ├── appointments/  # Gestión de citas
-│   │   ├── doctors/       # Gestión de doctores
-│   │   ├── patients/      # Gestión de pacientes
-│   │   └── admin/         # Panel administrativo
-│   ├── shared/            # Utilidades compartidas
-│   │   ├── middleware/    # Middlewares
-│   │   ├── services/      # Servicios (email, etc.)
-│   │   └── utils/         # Utilidades
-│   └── server.js          # Servidor principal
-├── frontend/              # Aplicación React
-│   ├── src/
-│   │   ├── apps/         # Módulos de la aplicación
-│   │   ├── components/   # Componentes reutilizables
-│   │   ├── contexts/     # Contextos de React
-│   │   └── pages/        # Páginas principales
-│   └── public/           # Archivos estáticos
-├── database/             # Scripts de base de datos
-│   ├── schema.sql       # Esquema de la BD
-│   └── init.sql         # Datos iniciales
-└── docker-compose.yml   # Configuración de Docker
-```
-
-## 🔧 Scripts Disponibles
+## Levantarlo
 
 ```bash
-# Desarrollo
-npm run dev              # Iniciar frontend y backend
-npm run dev:backend      # Solo backend
-npm run dev:frontend     # Solo frontend
+# 1. Base de datos
+cd backend-veloce && docker compose up -d
 
-# Docker
-npm run docker:up        # Levantar contenedores
-npm run docker:down      # Detener contenedores
-npm run docker:logs      # Ver logs
-npm run docker:restart   # Reiniciar contenedores
+# 2. Backend
+cp .env.example .env     # revisa DATABASE_URL y los secretos
+bun install
+bun run db:migrate
+bun run dev              # http://localhost:5000
 
-# Base de datos
-npm run db:reset         # Resetear BD completamente
-
-# Producción
-npm run build            # Construir frontend
-npm run start            # Iniciar solo backend
+# 3. Frontend
+cd ../frontend-veloce
+bun install
+bun run dev              # http://localhost:3000
 ```
 
-## 🌐 Puertos y URLs
+La documentación de la API queda en `http://localhost:5000/docs`.
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **PostgreSQL**: localhost:5433
-- **pgAdmin**: http://localhost:5050
+## Demostración pública
 
-## 🔐 Variables de Entorno
-
-Crear archivo `.env` en el directorio `backend/`:
-
-```env
-# Base de datos
-DB_HOST=localhost
-DB_PORT=5433
-DB_NAME=medical_appointments
-DB_USER=postgres
-DB_PASSWORD=postgres123
-
-# JWT
-JWT_SECRET=tu_secreto_jwt_super_seguro
-JWT_EXPIRES_IN=24h
-
-# Email
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=tu_email@gmail.com
-EMAIL_PASS=tu_password_de_aplicacion
-
-# Servidor
-PORT=5000
-NODE_ENV=development
-```
-
-## 📊 Características Técnicas
-
-### Seguridad
-- ✅ Autenticación JWT con interceptores automáticos
-- ✅ Encriptación de contraseñas (bcrypt)
-- ✅ Validación de datos en frontend y backend
-- ✅ Rate limiting para APIs
-- ✅ Headers de seguridad (Helmet)
-- ✅ Manejo automático de tokens expirados
-
-### Rendimiento
-- ✅ Índices optimizados en BD
-- ✅ Paginación en consultas
-- ✅ Caché de consultas frecuentes
-- ✅ Compresión de respuestas
-- ✅ Configuración centralizada de Axios
-
-### Escalabilidad
-- ✅ Arquitectura modular
-- ✅ Separación de responsabilidades
-- ✅ APIs RESTful
-- ✅ Contenedores Docker
-
-## 🐛 Correcciones Recientes
-
-### Problemas Solucionados
-- ✅ **Error de puertos ocupados**: Implementado manejo automático
-- ✅ **Error de autenticación**: Corregido middleware JWT (`decoded.userId` → `decoded.id`)
-- ✅ **Error de carga de doctores**: Removido requerimiento de autenticación para endpoint público
-- ✅ **Loop de redirección**: Corregida lógica de rutas protegidas
-- ✅ **Alertas innecesarias**: Eliminadas alertas de error cuando no hay citas
-- ✅ **Configuración de Axios**: Centralizada con interceptores automáticos
-
-### Mejoras Implementadas
-- ✅ **10 doctores** con diferentes especialidades
-- ✅ **Eliminación del botón "Nueva Cita"** de la vista de citas
-- ✅ **Creación de citas** solo desde la vista de doctores
-- ✅ **Manejo mejorado de errores** en frontend y backend
-- ✅ **Logs de debug** para facilitar troubleshooting
-
-## 🧪 Testing
+Con `DEMO_MODE=true` aparece una puerta de entrada sin contraseña, pensada para
+que cualquiera pueda probar la aplicación desde el portafolio.
 
 ```bash
-# Backend tests
-cd backend && npm test
-
-# Frontend tests
-cd frontend && npm test
+bun run demo:seed      # cuentas, 4 doctores geolocalizados, citas e historial
+bun run demo:reset     # borra lo que hicieron los visitantes
+bun run demo:refresh   # los dos, que es lo que corre el cron cada hora
 ```
 
-## 📝 API Endpoints
+Luego `/demo?rol=paciente`, `?rol=doctor` o `?rol=admin` entra y aterriza en la
+pantalla de ese rol.
 
-### Autenticación
-- `POST /api/auth/register` - Registro de usuarios
-- `POST /api/auth/login` - Login de usuarios
-- `GET /api/auth/profile` - Obtener perfil
-- `PUT /api/auth/profile` - Actualizar perfil
-- `PUT /api/auth/change-password` - Cambiar contraseña
+El sembrado deja **historia, no una base vacía**: citas completadas, una
+cancelada y dos próximas, un historial médico con signos vitales y una alergia
+registrada. Alguien que entra puede abrir una cita pasada y seguir desde ahí.
 
-### Citas
-- `GET /api/appointments` - Listar citas del usuario
-- `POST /api/appointments` - Crear cita
-- `PUT /api/appointments/:id` - Actualizar cita
-- `DELETE /api/appointments/:id` - Cancelar cita
-- `GET /api/appointments/stats/overview` - Estadísticas de citas
+### Sobre el bypass de autenticación
 
-### Doctores
-- `GET /api/doctors` - Listar doctores (público)
-- `GET /api/doctors/:id` - Obtener doctor específico
-- `PUT /api/doctors/:id` - Actualizar doctor
-- `GET /api/doctors/:id/availability` - Horarios disponibles
+`POST /api/demo/session` entrega una sesión **sin pedir contraseña**. Es
+intencional, y lleva cuatro candados en dos archivos que tienen que estar de
+acuerdo:
 
-### Pacientes
-- `GET /api/patients/history` - Historial médico
-- `POST /api/patients/history` - Agregar entrada al historial
+1. `DEMO_MODE=true`, apagado por omisión. Apagado, el controlador ni se
+   registra: las rutas responden 404, no 403.
+2. El correo termina en `@demo.citas.mx`.
+3. La fila trae `users.is_demo = true`.
+4. `AuthService.signInDemoAccount` repite las comprobaciones 1 y 2 por su
+   cuenta.
 
-## 🤝 Contribución
+**Esa base de datos nunca debe tener datos de personas reales.** La cuenta de
+administrador de la demostración es administradora de verdad dentro de ella.
 
-1. Fork el proyecto
-2. Crear una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abrir un Pull Request
+`demo:reset` solo toca filas que cuelgan de cuentas `@demo.citas.mx`, se niega a
+correr sin `DEMO_MODE`, y aborta si encuentra una cuenta marcada `is_demo` fuera
+de ese dominio.
 
-## 📄 Licencia
+## Pruebas
 
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+```bash
+bun run dev      # en una terminal
+bun run smoke    # en otra
+```
 
-## 👥 Autores
+21 aserciones contra la API corriendo: los tres roles de demostración, que la
+contraseña nunca viaja en una respuesta, que las coordenadas caen en México, que
+sin sesión las citas dan 401, que un paciente no entra al panel de
+administración y que el historial se lee.
 
-- **Alfredo Mejia** - *Desarrollo inicial* - [AlfredoMejia3001](https://github.com/AlfredoMejia3001)
+## Lo que falta
 
-## 🙏 Agradecimientos
+- **Sin pruebas de integración contra base real.** Las de humo ejercitan la API
+  ya levantada; no hay una suite que monte y tire su propio Postgres.
+- **La geocodificación es manual.** Las coordenadas se siembran a mano; no hay
+  servicio que convierta una dirección escrita en latitud y longitud.
+- **Los recordatorios por correo viven en el proceso.** Un `setTimeout` a las
+  08:00; con más de una instancia se mandarían duplicados. En producción irían
+  en un cron o una cola.
+- **Los documentos médicos guardan ruta, no archivo.** No hay almacenamiento
+  todavía.
+- **El correo necesita credenciales SMTP.** Sin ellas el registro funciona
+  igual, pero nadie recibe aviso.
 
-- React y Node.js communities
-- Tailwind CSS por los estilos
-- PostgreSQL por la base de datos robusta
-- Docker por la contenerización
+## Historia
 
----
-
-## 🚀 Estado del Proyecto
-
-### ⚠️ **IMPORTANTE: Fase Pre-Alpha**
-
-**Este proyecto se encuentra actualmente en fase PRE-ALPHA**, lo que significa que:
-
-- 🔴 **Muchas funcionalidades aún fallan o no están implementadas**
-- 🔴 **Solo las funcionalidades básicas de pacientes están operativas**
-- 🔴 **Los roles de doctores y administradores NO están completamente desarrollados**
-- 🔴 **El sistema no está listo para uso en producción**
-- 🔴 **Pueden ocurrir errores inesperados y pérdida de datos**
-
-### ✅ **Funcionalidades Operativas (Pacientes)**
-
-- ✅ **Registro y login** de pacientes
-- ✅ **Ver lista de doctores** disponibles
-- ✅ **Agendar citas** con doctores
-- ✅ **Ver citas programadas** y pasadas
-- ✅ **Navegación básica** en la aplicación
-
-### 🔴 **Funcionalidades NO Implementadas**
-
-- ❌ **Panel de doctores** (login, gestión de citas, historiales)
-- ❌ **Panel de administradores** (gestión de usuarios, reportes)
-- ❌ **Gestión de historiales médicos** completos
-- ❌ **Sistema de notificaciones** por email
-- ❌ **Subida de documentos** médicos
-- ❌ **Tests unitarios** y de integración
-- ❌ **Validaciones** avanzadas de datos
-- ❌ **Sistema de pagos** y facturación
-- ❌ **Reportes** y estadísticas
-- ❌ **Configuración** avanzada del sistema
-
-### 🔄 **En Desarrollo**
-
-- 🔄 **Corrección de errores** de autenticación y carga
-- 🔄 **Mejoras en UX** (eliminación de botón innecesario)
-- 🔄 **Configuración de precios** en pesos mexicanos
-- 🔄 **Documentación** del proyecto
-
-### 📋 **Pendiente**
-
-- 📋 **Implementación completa** de roles de doctores
-- 📋 **Implementación completa** de panel de administradores
-- 📋 **Tests unitarios** y de integración
-- 📋 **Documentación de API** completa
-- 📋 **Sistema de notificaciones** por email
-- 📋 **Gestión de documentos** médicos
-- 📋 **Reportes** y estadísticas
-- 📋 **Sistema de pagos** y facturación
-
-### 🎯 **Objetivo Actual**
-
-Este proyecto es principalmente una **demostración técnica** y un **prototipo funcional** para mostrar las capacidades básicas del sistema. No está diseñado para uso en producción hasta que se complete la fase de desarrollo.
-
-**Última actualización**: 5 de Agosto 2025 
+Empezó como un backend en Express con un frontend aparte. El backend está
+portado a Veloce-TS (`backend-veloce/`) con Drizzle y control de acceso por rol,
+y la API quedó en camelCase de punta a punta. El detalle de la migración está en
+`backend-veloce/MIGRATION.md`.

@@ -8,6 +8,20 @@
       "when": 1782589242415,
       "tag": "0000_real_sharon_carter",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792209433016,
+      "tag": "0001_rare_pixie",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792209615115,
+      "tag": "0002_closed_living_tribunal",
+      "breakpoints": true
     }
   ]
 }

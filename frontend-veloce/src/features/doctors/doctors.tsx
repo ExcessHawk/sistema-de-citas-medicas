@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Search, Stethoscope } from 'lucide-react'
+import { List, Map as MapIcon, Search, Stethoscope } from 'lucide-react'
 import { useDoctors } from './hooks'
 import { BookAppointmentDialog } from './book-dialog'
+import { DoctorMap } from './doctor-map'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ export function DoctorsPage() {
   const { data: doctors, isLoading, isError } = useDoctors()
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Doctor | null>(null)
+  const [vista, setVista] = useState<'lista' | 'mapa'>('lista')
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -30,14 +32,37 @@ export function DoctorsPage() {
         <p className="text-sm text-muted-foreground">Encuentra un especialista y reserva tu cita</p>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          placeholder="Buscar por nombre o especialidad"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            placeholder="Buscar por nombre o especialidad"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="flex gap-1 rounded-lg border p-1">
+          <Button
+            type="button"
+            size="sm"
+            variant={vista === 'lista' ? 'default' : 'ghost'}
+            onClick={() => setVista('lista')}
+          >
+            <List className="mr-1 size-4" />
+            Lista
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={vista === 'mapa' ? 'default' : 'ghost'}
+            onClick={() => setVista('mapa')}
+          >
+            <MapIcon className="mr-1 size-4" />
+            Mapa
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -46,6 +71,8 @@ export function DoctorsPage() {
         <ErrorState />
       ) : filtered.length === 0 ? (
         <EmptyState icon={Stethoscope} title="No se encontraron doctores" />
+      ) : vista === 'mapa' ? (
+        <DoctorMap doctors={filtered} onBook={setSelected} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((d) => (

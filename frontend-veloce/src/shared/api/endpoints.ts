@@ -34,6 +34,13 @@ export const authApi = {
     api.put<{ message: string }>('/api/auth/change-password', body),
 }
 
+// La demostración entrega sesión sin contraseña. Solo existe cuando el backend
+// corre con DEMO_MODE; si no, estas rutas responden 404.
+export const demoApi = {
+  session: (role: 'paciente' | 'doctor' | 'admin') =>
+    api.post<AuthResponse>('/api/demo/session', { role }),
+}
+
 export const doctorsApi = {
   list: () => api.get<{ doctors: Doctor[] }>('/api/doctors'),
   detail: (id: number) => api.get<{ doctor: Doctor }>(`/api/doctors/${id}`),

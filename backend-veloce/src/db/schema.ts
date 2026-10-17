@@ -87,6 +87,13 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 100 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
   role: userRoleEnum('role').notNull(),
+  // EN: marks the accounts the public demo may sign in as, without a password.
+  //     One of the four locks on that bypass; see src/demo/README of the deploy
+  //     repo. Never true on a database with real people in it.
+  // ES: marca las cuentas en las que la demostración pública puede entrar sin
+  //     contraseña. Uno de los cuatro candados de ese bypass. Nunca true en una
+  //     base con personas reales.
+  isDemo: boolean('is_demo').notNull().default(false),
   ...timestamps,
 });
 
@@ -100,6 +107,12 @@ export const doctors = pgTable('doctors', {
   licenseNumber: varchar('license_number', { length: 50 }).notNull().unique(),
   phone: varchar('phone', { length: 20 }).notNull(),
   address: text('address').notNull(),
+  // EN: consulting room coordinates, so the patient can see where it is on a
+  //     map before booking. Nullable: an address may not be geocoded yet.
+  // ES: coordenadas del consultorio, para que el paciente vea dónde queda
+  //     antes de agendar. Admite nulo: puede no estar geocodificada todavía.
+  latitude: numeric('latitude', { precision: 9, scale: 6 }),
+  longitude: numeric('longitude', { precision: 9, scale: 6 }),
   consultationFee: numeric('consultation_fee', { precision: 10, scale: 2 }).notNull(),
   // EN: list of available time slots, e.g. ["09:00","09:30"].
   availableHours: jsonb('available_hours').notNull().default(sql`'[]'::jsonb`),

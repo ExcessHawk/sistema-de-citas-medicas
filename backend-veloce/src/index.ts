@@ -33,6 +33,8 @@ import { DoctorsController } from './controllers/doctors.controller';
 import { AppointmentsController } from './controllers/appointments.controller';
 import { PatientsController } from './controllers/patients.controller';
 import { AdminController } from './controllers/admin.controller';
+import { DemoController } from './controllers/demo.controller';
+import { demoModeEnabled } from './demo/demo.constants';
 
 const PORT = Number(process.env.PORT ?? 5000);
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev_jwt_secret_change_in_production';
@@ -113,6 +115,15 @@ app.include(DoctorsController);
 app.include(AppointmentsController);
 app.include(PatientsController);
 app.include(AdminController);
+
+// EN: Only with DEMO_MODE on. Off, these routes are never registered, so they
+//     answer 404 instead of 403 — a 403 would confirm there is something here.
+// ES: Solo con DEMO_MODE encendido. Apagado, estas rutas no se registran, así
+//     que responden 404 y no 403 — un 403 confirmaría que hay algo aquí.
+if (demoModeEnabled()) {
+  app.include(DemoController);
+  console.warn('DEMO_MODE encendido: /api/demo/session entrega sesiones sin contraseña');
+}
 
 // ─── DI services (before compile) ─────────────────────────────────────────────
 

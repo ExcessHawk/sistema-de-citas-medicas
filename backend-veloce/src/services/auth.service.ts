@@ -20,6 +20,7 @@ import {
 } from 'veloce-ts';
 import type { JWTProvider } from 'veloce-ts';
 import { users, doctors } from '../db/schema';
+import { DEMO_DOMAIN } from '../demo/demo.constants';
 import type { DrizzleDB } from '../db/client';
 import type { RegisterDto, LoginDto, UpdateProfileDto, ChangePasswordDto } from '../dtos/auth.dto';
 import type { EmailService } from './email.service';
@@ -92,6 +93,34 @@ export class AuthService {
     }
 
     return { message: 'Usuario registrado exitosamente', token, user };
+  }
+
+  /**
+   * EN: Signs in a demo account with no password. Two of the four locks live
+   *     here, repeated on purpose: the service must agree with the controller
+   *     before any session is handed out.
+   * ES: Entra a una cuenta de demostración sin contraseña. Dos de los cuatro
+   *     candados viven aquí, repetidos a propósito: el servicio tiene que
+   *     estar de acuerdo con el controlador antes de entregar una sesión.
+   */
+  async signInDemoAccount(db: DrizzleDB, email: string) {
+    if (process.env.DEMO_MODE !== 'true') {
+      throw new UnauthorizedException('Demo mode is off');
+    }
+    if (!email.endsWith(DEMO_DOMAIN)) {
+      throw new UnauthorizedException('Not a demo account');
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    if (!user || !user.isDemo) {
+      throw new UnauthorizedException('Not a demo account');
+    }
+
+    const token = this.signToken(user);
+    const doctorInfo = user.role === 'doctor' ? await this.loadDoctorInfo(db, user.id) : null;
+
+    const { password: _pw, ...safe } = user;
+    return { message: 'Sesión de demostración', token, user: { ...safe, doctorInfo } };
   }
 
   async login(db: DrizzleDB, body: LoginDto) {

@@ -56,6 +56,8 @@ export class DoctorsController {
         licenseNumber: doctors.licenseNumber,
         phone: doctors.phone,
         address: doctors.address,
+        latitude: doctors.latitude,
+        longitude: doctors.longitude,
         availableHours: doctors.availableHours,
         consultationFee: doctors.consultationFee,
       })
@@ -79,6 +81,8 @@ export class DoctorsController {
         licenseNumber: doctors.licenseNumber,
         phone: doctors.phone,
         address: doctors.address,
+        latitude: doctors.latitude,
+        longitude: doctors.longitude,
         availableHours: doctors.availableHours,
         consultationFee: doctors.consultationFee,
       })
@@ -115,6 +119,8 @@ export class DoctorsController {
         licenseNumber: body.licenseNumber,
         phone: body.phone,
         address: body.address,
+        latitude: body.latitude === undefined ? null : String(body.latitude),
+        longitude: body.longitude === undefined ? null : String(body.longitude),
         consultationFee: String(body.consultationFee),
         availableHours: body.availableHours,
       })
@@ -143,6 +149,8 @@ export class DoctorsController {
     if (body.licenseNumber !== undefined) patch.licenseNumber = body.licenseNumber;
     if (body.phone !== undefined) patch.phone = body.phone;
     if (body.address !== undefined) patch.address = body.address;
+    if (body.latitude !== undefined) patch.latitude = body.latitude === null ? null : String(body.latitude);
+    if (body.longitude !== undefined) patch.longitude = body.longitude === null ? null : String(body.longitude);
     if (body.consultationFee !== undefined) patch.consultationFee = String(body.consultationFee);
     if (body.availableHours !== undefined) patch.availableHours = body.availableHours;
     if (Object.keys(patch).length === 0) throw new BadRequestException('No hay campos para actualizar');
