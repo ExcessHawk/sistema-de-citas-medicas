@@ -19,10 +19,12 @@ import {
   Param,
   Ctx,
   Roles,
+  Inject,
   InjectDB,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  UseMiddleware,
 } from 'veloce-ts';
 import type { Context } from 'hono';
 import { and, eq, gte, desc, asc } from 'drizzle-orm';
@@ -37,6 +39,14 @@ import {
   medicalDocuments,
 } from '../db/schema';
 import { requireUser, type AuthUser } from '../auth/current-user';
+import {
+  DOCUMENT_MAX_BYTES,
+  claveValida,
+  sniff,
+  UploadRejectedError,
+  type StorageProvider,
+} from '../services/storage.service';
+import { uploadRateLimit } from '../middleware/rate-limit.middleware';
 import {
   CreateMedicalHistorySchema,
   UpdateMedicalHistorySchema,
@@ -57,7 +67,10 @@ const CLINICIAN = ['doctor', 'admin'];
 
 @Controller('/api/patients')
 export class PatientsController {
-  constructor(@InjectDB() private db: DrizzleDB) {}
+  constructor(
+    @InjectDB() private db: DrizzleDB,
+    @Inject('StorageProvider') private storage: StorageProvider,
+  ) {}
 
   /** EN: A patient may read only their own data; clinicians read anyone's. */
   private assertCanReadPatient(user: AuthUser, patientId: number) {
@@ -394,6 +407,79 @@ export class PatientsController {
       .returning();
     c.status(201);
     return doc;
+  }
+
+  /**
+   * EN: `POST /api/patients/documents/upload` — store the file, return its key.
+   * ES: Guarda el archivo y devuelve su clave. El registro se crea después con
+   *     `POST /documents`, que es el que dice de quién es.
+   */
+  @Post('/documents/upload')
+  @Roles(CLINICIAN)
+  @UseMiddleware(uploadRateLimit)
+  async uploadDocument(@Ctx() c: Context) {
+    requireUser(c);
+
+    const tipo = c.req.header('content-type') ?? '';
+    if (!tipo.toLowerCase().includes('multipart/form-data')) {
+      throw new BadRequestException('Manda el archivo como multipart/form-data');
+    }
+
+    let form: FormData;
+    try {
+      form = await c.req.formData();
+    } catch {
+      throw new BadRequestException('No se pudo leer el formulario');
+    }
+
+    const archivo = form.get('file');
+    if (!(archivo instanceof File)) throw new BadRequestException('Falta el campo "file"');
+    if (archivo.size === 0) throw new BadRequestException('El archivo viene vacío');
+    if (archivo.size > DOCUMENT_MAX_BYTES) {
+      throw new BadRequestException(
+        `El archivo pesa ${Math.ceil(archivo.size / 1024)} kB y el límite son ${DOCUMENT_MAX_BYTES / 1024} kB`,
+      );
+    }
+
+    const data = new Uint8Array(await archivo.arrayBuffer());
+    const firma = sniff(data);
+    if (!firma) throw new BadRequestException('Solo se aceptan PDF, JPEG, PNG o WebP');
+
+    try {
+      const guardado = await this.storage.put({ data, ...firma });
+      return { ...guardado, filename: archivo.name };
+    } catch (error) {
+      if (error instanceof UploadRejectedError) throw new BadRequestException(error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * EN: `GET /api/patients/documents/:id/file` — download, if you may read it.
+   * ES: La descarga va por el id del documento y no por la clave: el id es lo
+   *     único que dice de qué paciente es el archivo. Un análisis no se sirve
+   *     en abierto solo porque alguien adivine un nombre.
+   */
+  @Get('/documents/:id/file')
+  @Roles(ANY_ROLE)
+  async documentFile(@Param('id') id: string, @Ctx() c: Context) {
+    const user = requireUser(c);
+    const [doc] = await this.db
+      .select()
+      .from(medicalDocuments)
+      .where(eq(medicalDocuments.id, Number(id)));
+    if (!doc) throw new NotFoundException('Ese documento no existe');
+    this.assertCanReadPatient(user, doc.patientId);
+
+    // Los registros viejos guardaban una referencia escrita a mano, no un
+    // archivo. Esos no tienen nada que descargar.
+    if (!doc.filePath || !claveValida(doc.filePath)) {
+      throw new NotFoundException('Ese documento no tiene archivo adjunto');
+    }
+
+    const respuesta = await this.storage.serve(doc.filePath, doc.title);
+    if (!respuesta) throw new NotFoundException('El archivo ya no está');
+    return respuesta;
   }
 
   /** EN: Drop keys whose value is `undefined` so partial updates stay sparse. */

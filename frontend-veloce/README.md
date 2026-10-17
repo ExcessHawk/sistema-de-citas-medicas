@@ -53,6 +53,6 @@ redirige a `/login` ante un 401.
 ## Pendiente (mejora futura)
 
 - Edición de entradas de historial/seguimientos (hoy solo alta + lectura).
-- Subida real de documentos (hoy se guarda la referencia, no el archivo).
+- Vista previa de los adjuntos sin descargarlos.
 - Reemplazar el cliente a mano por el generado de veloce-ts (`generate:client`)
   cuando se valide su salida.

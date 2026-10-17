@@ -8,6 +8,8 @@
  *
  *   bun run demo:reset
  */
+import { readdir, rm } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import { Client } from 'pg'
 
 const DOMAIN = '@demo.citas.mx'
@@ -74,6 +76,31 @@ const pasos = [
 for (const [etiqueta, sql] of pasos) {
   await q(sql)
   console.log(`  limpio: ${etiqueta}`)
+}
+
+// ── archivos sin documento ───────────────────────────────────────────────────
+//
+// Al borrar los documentos de la demostración, sus archivos quedan sueltos en
+// el disco. Se barre lo que ya no referencia ninguna fila; nada más.
+
+const CLAVE = /^[0-9a-f]{32}\.(pdf|jpg|png|webp)$/
+
+const dir = resolve(process.env.UPLOADS_DIR ?? './data/uploads')
+let archivos = []
+try {
+  archivos = (await readdir(dir)).filter((n) => CLAVE.test(n))
+} catch {
+  archivos = []
+}
+
+if (archivos.length) {
+  const { rows } = await client.query(
+    `SELECT DISTINCT file_path FROM medical_documents WHERE file_path IS NOT NULL`,
+  )
+  const vivas = new Set(rows.map((r) => r.file_path))
+  const sueltos = archivos.filter((n) => !vivas.has(n))
+  await Promise.all(sueltos.map((n) => rm(join(dir, n), { force: true })))
+  console.log(`  limpio: ${sueltos.length} archivo(s) sin documento de ${archivos.length}`)
 }
 
 console.log('')

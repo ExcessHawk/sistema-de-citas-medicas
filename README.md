@@ -14,8 +14,8 @@ consultorios en un mapa, reserva un horario libre, consulta sus citas pasadas y
 próximas, lee su historial médico y recibe aviso por correo.
 
 **El doctor** se registra con número de cédula, publica sus horarios, atiende lo
-agendado, escribe el historial de cada consulta, abre seguimientos y sube
-documentos.
+agendado, escribe el historial de cada consulta, abre seguimientos y adjunta
+documentos: recetas, análisis y radiografías en PDF o imagen.
 
 **El administrador** ve las estadísticas de la clínica y administra usuarios y
 doctores.

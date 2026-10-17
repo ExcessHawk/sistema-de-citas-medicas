@@ -88,6 +88,13 @@ export const patientsApi = {
     api.get<MedicalDocument[]>(`/api/patients/documents/patient/${patientId}`),
   createDocument: (body: CreateDocumentPayload) =>
     api.post<MedicalDocument>('/api/patients/documents', body),
+  uploadDocumentFile: (file: File) =>
+    api.upload<{ key: string; bytes: number; contentType: string; filename: string }>(
+      '/api/patients/documents/upload',
+      file,
+    ),
+  downloadDocument: (documentId: number) =>
+    api.download(`/api/patients/documents/${documentId}/file`),
 }
 
 export const adminApi = {

@@ -42,6 +42,24 @@ const call = async (path, { method = 'GET', token, body } = {}) => {
   return { status: res.status, data }
 }
 
+const subir = async (bytes, { token, filename = 'estudio.pdf', type = 'application/pdf' } = {}) => {
+  const form = new FormData()
+  form.append('file', new Blob([bytes], { type }), filename)
+  const res = await fetch(`${API}/api/patients/documents/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  })
+  const text = await res.text()
+  let data = text
+  try {
+    data = JSON.parse(text)
+  } catch {
+    /* no era JSON */
+  }
+  return { status: res.status, data }
+}
+
 console.log(`Humo contra ${API}`)
 
 // ── salud ─────────────────────────────────────────────────────────────────────
@@ -207,6 +225,83 @@ if (viva) {
     reabierta.status === 200 && tras.data?.appointment?.cancellationReason === null,
     JSON.stringify(tras.data?.appointment?.cancellationReason),
   )
+}
+
+// ── adjuntos de los documentos clínicos ──────────────────────────────────────
+
+/** PDF mínimo válido: lo que importa son los primeros cuatro bytes. */
+const PDF = new TextEncoder().encode(['%PDF-1.4', '1 0 obj', '<<>>', 'endobj', 'trailer', '<<>>', '%%EOF'].join(String.fromCharCode(10)))
+const TEXTO = new TextEncoder().encode('esto no es un PDF aunque se llame .pdf')
+
+check(
+  'un paciente no puede subir adjuntos',
+  (await subir(PDF, { token: tokenPaciente })).status === 403,
+  `status ${(await subir(PDF, { token: tokenPaciente })).status}`,
+)
+
+const textoDisfrazado = await subir(TEXTO, { token: tokenDoctor })
+check(
+  'un texto con nombre de PDF se rechaza',
+  textoDisfrazado.status === 400,
+  `status ${textoDisfrazado.status}`,
+)
+
+const adjunto = await subir(PDF, { token: tokenDoctor })
+check('el doctor sube un PDF', adjunto.status === 200, `status ${adjunto.status}`)
+check(
+  'la clave la pone el servidor',
+  /^[0-9a-f]{32}\.pdf$/.test(adjunto.data?.key ?? ''),
+  JSON.stringify(adjunto.data?.key),
+)
+
+const pacienteId2 = sesionPaciente.data?.user?.id
+const doc = await call('/api/patients/documents', {
+  method: 'POST',
+  token: tokenDoctor,
+  body: {
+    patientId: pacienteId2,
+    documentType: 'lab_report',
+    title: 'Biometría de prueba',
+    filePath: adjunto.data?.key,
+    fileSize: adjunto.data?.bytes,
+    mimeType: adjunto.data?.contentType,
+  },
+})
+check('el documento queda registrado', doc.status === 201, `status ${doc.status}`)
+
+const docId = doc.data?.id
+if (docId) {
+  const descarga = await fetch(`${API}/api/patients/documents/${docId}/file`, {
+    headers: { Authorization: `Bearer ${tokenPaciente}` },
+  })
+  check('el paciente descarga su documento', descarga.status === 200, `status ${descarga.status}`)
+  check(
+    'y llega como PDF',
+    (descarga.headers.get('content-type') ?? '').includes('application/pdf'),
+    descarga.headers.get('content-type'),
+  )
+
+  const sinSesion = await fetch(`${API}/api/patients/documents/${docId}/file`)
+  check('sin sesión no se descarga', sinSesion.status === 401, `status ${sinSesion.status}`)
+
+  // Otro paciente no tiene nada que ver con este expediente. La cuenta usa el
+  // dominio de la demostración para que demo:reset se la lleve.
+  const intruso = await call('/api/auth/register', {
+    method: 'POST',
+    body: {
+      name: 'Paciente Ajeno',
+      email: `ajeno${Date.now()}@demo.citas.mx`,
+      password: 'frase-larga-de-prueba-123',
+      role: 'patient',
+    },
+  })
+  const tokenIntruso = intruso.data?.token
+  if (tokenIntruso) {
+    const ajena = await fetch(`${API}/api/patients/documents/${docId}/file`, {
+      headers: { Authorization: `Bearer ${tokenIntruso}` },
+    })
+    check('otro paciente no lo descarga', ajena.status === 403, `status ${ajena.status}`)
+  }
 }
 
 // ── historial ─────────────────────────────────────────────────────────────────

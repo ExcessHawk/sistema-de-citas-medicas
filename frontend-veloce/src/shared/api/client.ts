@@ -67,9 +67,64 @@ async function request<T>(
   return data as T
 }
 
+/**
+ * Sube un archivo como multipart.
+ *
+ * No se fija `Content-Type`: lo pone el navegador con el `boundary`, y sin él
+ * el servidor no puede separar las partes.
+ */
+async function upload<T>(path: string, file: File): Promise<T> {
+  const headers: Record<string, string> = {}
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const form = new FormData()
+  form.append('file', file)
+
+  const res = await fetch(buildUrl(path), { method: 'POST', headers, body: form })
+  const text = await res.text()
+  const data = text ? JSON.parse(text) : null
+  if (!res.ok) {
+    const message =
+      (data && (data.error || data.detail || data.message)) || `Error ${res.status}`
+    throw new ApiError(res.status, message)
+  }
+  return data as T
+}
+
+/**
+ * Descarga un archivo protegido.
+ *
+ * Un `<a href>` no lleva la cabecera de autorización, y estos adjuntos no son
+ * públicos: se piden con el token y se abren desde memoria.
+ */
+async function download(path: string): Promise<{ blob: Blob; filename: string | null }> {
+  const headers: Record<string, string> = {}
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const res = await fetch(buildUrl(path), { headers })
+  if (!res.ok) {
+    let message = `Error ${res.status}`
+    try {
+      const data = JSON.parse(await res.text())
+      message = data.error || data.detail || data.message || message
+    } catch {
+      /* el cuerpo no era JSON */
+    }
+    throw new ApiError(res.status, message)
+  }
+
+  const dispo = res.headers.get('content-disposition') ?? ''
+  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(dispo)
+  return { blob: await res.blob(), filename: match ? decodeURIComponent(match[1]) : null }
+}
+
 export const api = {
   get: <T>(path: string, params?: Params) => request<T>('GET', path, { params }),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, { body }),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, { body }),
   del: <T>(path: string) => request<T>('DELETE', path),
+  upload,
+  download,
 }

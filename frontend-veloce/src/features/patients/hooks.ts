@@ -60,6 +60,12 @@ export function useCreateCondition(patientId: number) {
   })
 }
 
+export function useUploadDocumentFile() {
+  return useMutation({
+    mutationFn: (file: File) => patientsApi.uploadDocumentFile(file),
+  })
+}
+
 export function useCreateDocument(patientId: number) {
   const qc = useQueryClient()
   return useMutation({

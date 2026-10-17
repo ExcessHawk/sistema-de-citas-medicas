@@ -6,3 +6,6 @@ dist/
 
 # Secretos que genera bootstrap.sh en el servidor. Nunca se versionan.
 api.env
+
+# Archivos subidos en desarrollo. En el VPS esto es un volumen de Docker.
+data/

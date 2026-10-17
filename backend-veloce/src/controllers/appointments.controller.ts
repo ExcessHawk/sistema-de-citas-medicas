@@ -61,6 +61,8 @@ export class AppointmentsController {
       const rows = await this.db
         .select({
           id: appointments.id,
+          patientId: appointments.patientId,
+          doctorId: appointments.doctorId,
           appointmentDate: appointments.appointmentDate,
           appointmentTime: appointments.appointmentTime,
           status: appointments.status,
@@ -84,6 +86,8 @@ export class AppointmentsController {
     const rows = await this.db
       .select({
         id: appointments.id,
+        patientId: appointments.patientId,
+        doctorId: appointments.doctorId,
         appointmentDate: appointments.appointmentDate,
         appointmentTime: appointments.appointmentTime,
         status: appointments.status,

@@ -38,3 +38,11 @@ export const authRateLimit = createRateLimitMiddleware({
   max: Number(process.env.AUTH_RATE_LIMIT_MAX ?? 10),
   keyGenerator: (c) => `auth:${clientIp(c as Context)}`,
 });
+
+// Subir cuesta disco, no solo CPU. Veinte por minuto alcanza para adjuntar los
+// estudios de una consulta y no para llenar el volumen.
+export const uploadRateLimit = createRateLimitMiddleware({
+  windowMs: 60_000,
+  max: Number(process.env.UPLOAD_RATE_LIMIT_MAX ?? 20),
+  keyGenerator: (c) => `upload:${clientIp(c as Context)}`,
+});

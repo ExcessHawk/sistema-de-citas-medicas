@@ -28,6 +28,7 @@ import { db } from './db/client';
 import { customUserProvider } from './auth/user-provider';
 import { AuthService } from './services/auth.service';
 import { EmailService } from './services/email.service';
+import { DOCUMENT_MAX_BYTES, createStorageProvider } from './services/storage.service';
 import { AuthController } from './controllers/auth.controller';
 import { DoctorsController } from './controllers/doctors.controller';
 import { AppointmentsController } from './controllers/appointments.controller';
@@ -67,6 +68,10 @@ const app = new Veloce({
   title: 'Sistema de Citas Médicas API',
   version: '1.0.0',
   description: 'API REST para gestión de citas médicas (Veloce-TS)',
+  // El tope por omisión del framework es 1 MiB y un PDF de laboratorio lo pasa
+  // sin esfuerzo. Este margen deja subir los 5 MiB del servicio más el sobre
+  // del multipart.
+  bodyLimit: DOCUMENT_MAX_BYTES + 512 * 1024,
   cors: {
     origin: isAllowedOrigin,
     credentials: true,
@@ -136,6 +141,9 @@ container.register(JWTProvider, { factory: () => jwtProvider, scope: 'singleton'
 
 const emailService = new EmailService();
 container.register(EmailService, { factory: () => emailService, scope: 'singleton' });
+
+const storageProvider = createStorageProvider();
+container.register('StorageProvider', { factory: () => storageProvider, scope: 'singleton' });
 
 container.register(AuthService, {
   factory: () => new AuthService(jwtProvider),
