@@ -3,3 +3,6 @@ dist/
 *.log
 .env
 .DS_Store
+
+# Secretos que genera bootstrap.sh en el servidor. Nunca se versionan.
+api.env
