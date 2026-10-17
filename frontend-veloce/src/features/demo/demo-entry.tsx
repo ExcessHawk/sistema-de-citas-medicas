@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { demoApi } from '@/shared/api/endpoints'
 import { setAuth } from '@/shared/auth/token'
-import { Button } from '@/components/ui/button'
+import { Button, Center, Group, Loader, Stack, Text, Title } from '@mantine/core'
 
 type DemoRole = 'paciente' | 'doctor' | 'admin'
 
@@ -58,21 +58,31 @@ export function DemoEntryPage() {
 
   if (error) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
-        <h1 className="text-2xl font-semibold">La demostración no abrió</h1>
-        <p className="text-sm text-muted-foreground">{error}</p>
-        <p className="text-sm text-muted-foreground">
-          Puedes entrar con una cuenta normal mientras tanto.
-        </p>
-        <Button onClick={() => navigate('/login')}>Ir a iniciar sesión</Button>
-      </div>
+      <Center mih="100dvh" px="md">
+        <Stack align="center" gap="sm" ta="center" maw={420}>
+          <Title order={2}>La demostración no abrió</Title>
+          <Text size="sm" c="dimmed">
+            {error}
+          </Text>
+          <Text size="sm" c="dimmed">
+            Puedes entrar con una cuenta normal mientras tanto.
+          </Text>
+          <Button mt="sm" onClick={() => navigate('/login')}>
+            Ir a iniciar sesión
+          </Button>
+        </Stack>
+      </Center>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center gap-3 text-sm text-muted-foreground">
-      <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-      Entrando como {ETIQUETA[rol]}…
-    </div>
+    <Center mih="100dvh">
+      <Group gap="sm">
+        <Loader size="sm" color="clinico" />
+        <Text size="sm" c="dimmed">
+          Entrando como {ETIQUETA[rol]}…
+        </Text>
+      </Group>
+    </Center>
   )
 }

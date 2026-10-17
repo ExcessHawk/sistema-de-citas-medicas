@@ -133,6 +133,8 @@ export const appointments = pgTable(
     appointmentTime: time('appointment_time').notNull(),
     status: appointmentStatusEnum('status').notNull().default('scheduled'),
     notes: text('notes'),
+    /** Por qué se canceló. Null mientras la cita siga viva. */
+    cancellationReason: text('cancellation_reason'),
     ...timestamps,
   },
   (t) => ({

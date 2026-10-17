@@ -1,46 +1,80 @@
+/**
+ * Los tres estados que toda pantalla con datos tiene que resolver: cargando,
+ * vacío y roto. Antes cada una los dibujaba a su manera.
+ */
 import type { ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, Button, Center, Loader, Paper, Skeleton, Stack, Text } from '@mantine/core'
+import { AlertCircle, Inbox } from 'lucide-react'
 
-export function Loading({ rows = 3 }: { rows?: number }) {
+export function Loading({ rows = 3, height = 64 }: { rows?: number; height?: number }) {
   return (
-    <div className="space-y-3">
+    <Stack gap="sm">
       {Array.from({ length: rows }).map((_, i) => (
-        <Skeleton key={i} className="h-16 w-full" />
+        <Skeleton key={i} height={height} radius="md" />
       ))}
-    </div>
+    </Stack>
   )
 }
 
-export function Spinner() {
-  return <Loader2 className="size-5 animate-spin text-muted-foreground" />
+export function Spinner({ label }: { label?: string }) {
+  return (
+    <Center py="xl">
+      <Stack align="center" gap="xs">
+        <Loader size="sm" color="clinico" />
+        {label && (
+          <Text size="sm" c="dimmed">
+            {label}
+          </Text>
+        )}
+      </Stack>
+    </Center>
+  )
 }
 
 export function EmptyState({
-  icon: Icon,
+  icon: Icon = Inbox,
   title,
   description,
   action,
 }: {
-  icon?: React.ComponentType<{ className?: string }>
+  icon?: React.ComponentType<{ size?: number | string }>
   title: string
   description?: string
   action?: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
-      {Icon && <Icon className="mb-3 size-10 text-muted-foreground" />}
-      <h3 className="text-sm font-medium">{title}</h3>
-      {description && <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>}
-      {action && <div className="mt-4">{action}</div>}
-    </div>
+    <Paper
+      withBorder
+      radius="md"
+      py={48}
+      px="lg"
+      style={{ borderStyle: 'dashed', background: 'transparent' }}
+    >
+      <Stack align="center" gap="xs" ta="center">
+        <Icon size={38} />
+        <Text fw={600}>{title}</Text>
+        {description && (
+          <Text size="sm" c="dimmed" maw={420}>
+            {description}
+          </Text>
+        )}
+        {action && <div style={{ marginTop: 8 }}>{action}</div>}
+      </Stack>
+    </Paper>
   )
 }
 
-export function ErrorState({ message }: { message?: string }) {
+export function ErrorState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
   return (
-    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-      {message || 'Ocurrió un error al cargar los datos.'}
-    </div>
+    <Alert color="red" icon={<AlertCircle size={18} />} title="No se pudieron cargar los datos">
+      <Stack gap="sm" align="flex-start">
+        <Text size="sm">{message || 'Ocurrió un error al hablar con el servidor.'}</Text>
+        {onRetry && (
+          <Button size="xs" variant="light" color="red" onClick={onRetry}>
+            Reintentar
+          </Button>
+        )}
+      </Stack>
+    </Alert>
   )
 }

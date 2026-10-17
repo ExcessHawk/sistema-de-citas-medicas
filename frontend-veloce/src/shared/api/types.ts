@@ -33,9 +33,22 @@ export interface DoctorInfo {
   phone: string
   address: string
   consultationFee: string
+  latitude: string | null
+  longitude: string | null
   availableHours: string[]
   createdAt: string
   updatedAt: string
+}
+
+export interface UpdateDoctorPayload {
+  specialty?: string
+  licenseNumber?: string
+  phone?: string
+  address?: string
+  latitude?: number | null
+  longitude?: number | null
+  consultationFee?: number
+  availableHours?: string[]
 }
 
 export interface User {
@@ -79,6 +92,8 @@ export interface Appointment {
   appointmentTime: string
   status: AppointmentStatus
   notes: string | null
+  /** Por qué se canceló. Solo viene con cita cancelada. */
+  cancellationReason?: string | null
   createdAt: string
   updatedAt: string
   // joined, depending on viewer
@@ -221,6 +236,7 @@ export interface CreateAppointmentPayload {
 export interface UpdateAppointmentPayload {
   status?: AppointmentStatus
   notes?: string
+  cancellationReason?: string
 }
 
 export interface CreateMedicalHistoryPayload {

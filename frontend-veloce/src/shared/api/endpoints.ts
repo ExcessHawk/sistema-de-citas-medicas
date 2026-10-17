@@ -18,6 +18,8 @@ import type {
   ChangePasswordPayload,
   CreateAppointmentPayload,
   UpdateAppointmentPayload,
+  UpdateDoctorPayload,
+  DoctorInfo,
   CreateMedicalHistoryPayload,
   CreateFollowUpPayload,
   UpdateFollowUpPayload,
@@ -46,6 +48,8 @@ export const doctorsApi = {
   detail: (id: number) => api.get<{ doctor: Doctor }>(`/api/doctors/${id}`),
   availability: (id: number, date?: string) =>
     api.get<Availability>(`/api/doctors/${id}/availability`, date ? { date } : undefined),
+  update: (id: number, body: UpdateDoctorPayload) =>
+    api.put<{ message: string; doctor: DoctorInfo }>(`/api/doctors/${id}`, body),
 }
 
 export const appointmentsApi = {

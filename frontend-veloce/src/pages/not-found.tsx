@@ -1,15 +1,21 @@
 import { Link } from 'react-router-dom'
-import { buttonVariants } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { Button, Center, Stack, Text, Title } from '@mantine/core'
 
 export function NotFoundPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
-      <p className="text-6xl font-bold text-muted-foreground">404</p>
-      <h1 className="text-xl font-semibold">Página no encontrada</h1>
-      <Link to="/" className={cn(buttonVariants())}>
-        Volver al inicio
-      </Link>
-    </div>
+    <Center mih="100dvh" px="md">
+      <Stack align="center" gap="sm" ta="center">
+        <Text fz={64} fw={700} c="dimmed" lh={1}>
+          404
+        </Text>
+        <Title order={2}>Esta página no existe</Title>
+        <Text size="sm" c="dimmed" maw={340}>
+          Puede que el enlace esté roto o que la hayamos movido.
+        </Text>
+        <Button component={Link} to="/" mt="sm">
+          Volver al inicio
+        </Button>
+      </Stack>
+    </Center>
   )
 }

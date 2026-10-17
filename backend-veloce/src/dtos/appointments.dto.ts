@@ -14,5 +14,6 @@ export type CreateAppointmentDto = z.infer<typeof CreateAppointmentSchema>;
 export const UpdateAppointmentSchema = z.object({
   status: z.enum(['scheduled', 'confirmed', 'cancelled', 'completed']).optional(),
   notes: z.string().optional(),
+  cancellationReason: z.string().trim().min(3).max(300).optional(),
 });
 export type UpdateAppointmentDto = z.infer<typeof UpdateAppointmentSchema>;

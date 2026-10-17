@@ -159,6 +159,56 @@ if (Array.isArray(citas) && citas.length > 0) {
   )
 }
 
+// ── cancelar con motivo ───────────────────────────────────────────────────────
+
+const viva = (citas ?? []).find((c) => c.status === 'scheduled' || c.status === 'confirmed')
+if (viva) {
+  const sinMotivo = await call(`/api/appointments/${viva.id}`, {
+    method: 'PUT',
+    token: tokenPaciente,
+    body: { status: 'cancelled' },
+  })
+  check(
+    'cancelar sin motivo no deja la cita a medias',
+    sinMotivo.status === 200,
+    `status ${sinMotivo.status}`,
+  )
+
+  const corto = await call(`/api/appointments/${viva.id}`, {
+    method: 'PUT',
+    token: tokenPaciente,
+    body: { status: 'cancelled', cancellationReason: 'x' },
+  })
+  check('un motivo de una letra se rechaza', corto.status === 422, `status ${corto.status}`)
+
+  const motivo = 'Me surgió una urgencia y no alcanzo a llegar'
+  const conMotivo = await call(`/api/appointments/${viva.id}`, {
+    method: 'PUT',
+    token: tokenPaciente,
+    body: { status: 'cancelled', cancellationReason: motivo },
+  })
+  check('cancelar con motivo responde 200', conMotivo.status === 200, `status ${conMotivo.status}`)
+
+  const releida = await call(`/api/appointments/${viva.id}`, { token: tokenPaciente })
+  check(
+    'el motivo queda guardado y se lee de vuelta',
+    releida.data?.appointment?.cancellationReason === motivo,
+    JSON.stringify(releida.data?.appointment?.cancellationReason),
+  )
+
+  const reabierta = await call(`/api/appointments/${viva.id}`, {
+    method: 'PUT',
+    token: tokenPaciente,
+    body: { status: 'scheduled' },
+  })
+  const tras = await call(`/api/appointments/${viva.id}`, { token: tokenPaciente })
+  check(
+    'reabrir la cita borra el motivo viejo',
+    reabierta.status === 200 && tras.data?.appointment?.cancellationReason === null,
+    JSON.stringify(tras.data?.appointment?.cancellationReason),
+  )
+}
+
 // ── historial ─────────────────────────────────────────────────────────────────
 
 const pacienteId = sesionPaciente.data?.user?.id

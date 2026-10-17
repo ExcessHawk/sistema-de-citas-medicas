@@ -1,92 +1,106 @@
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
+import { Button, Group, Modal, Select, Stack, Text, Textarea } from '@mantine/core'
+import dayjs from 'dayjs'
 import { useUpdateAppointment } from './hooks'
-import { ApiError } from '@/shared/api/client'
+import { avisoError, avisoExito } from '@/shared/ui/avisos'
+import { ESTADOS, nombreDoctor } from '@/shared/ui/theme'
+import { useAuth } from '@/shared/auth/auth-context'
 import type { Appointment, AppointmentStatus } from '@/shared/api/types'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+
+/**
+ * Un paciente puede confirmar o cancelar la suya. Marcarla como completada o
+ * como ausencia es un juicio clínico, y lo hace quien atendió.
+ */
+const PARA_PACIENTE: AppointmentStatus[] = ['scheduled', 'confirmed', 'cancelled']
 
 export function EditAppointmentDialog({
   appointment,
-  open,
-  onOpenChange,
+  onClose,
 }: {
   appointment: Appointment | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  onClose: () => void
 }) {
-  const update = useUpdateAppointment()
-  const [status, setStatus] = useState<AppointmentStatus>('scheduled')
-  const [notes, setNotes] = useState('')
+  const { user } = useAuth()
+  const esClinico = user?.role === 'doctor' || user?.role === 'admin'
+  const actualizar = useUpdateAppointment()
+
+  const [estado, setEstado] = useState<AppointmentStatus>('scheduled')
+  const [notas, setNotas] = useState('')
 
   useEffect(() => {
     if (appointment) {
-      setStatus(appointment.status)
-      setNotes(appointment.notes ?? '')
+      setEstado(appointment.status)
+      setNotas(appointment.notes ?? '')
     }
   }, [appointment])
 
-  const submit = async () => {
+  const opciones = Object.entries(ESTADOS)
+    .filter(([valor]) => esClinico || PARA_PACIENTE.includes(valor as AppointmentStatus))
+    .map(([value, { label }]) => ({ value, label }))
+
+  const guardar = async () => {
     if (!appointment) return
     try {
-      await update.mutateAsync({ id: appointment.id, body: { status, notes } })
-      toast.success('Cita actualizada')
-      onOpenChange(false)
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Error al actualizar')
+      await actualizar.mutateAsync({
+        id: appointment.id,
+        body: { status: estado, notes: notas },
+      })
+      avisoExito('Cita actualizada')
+      onClose()
+    } catch (e) {
+      avisoError(e, 'No se pudo actualizar')
     }
   }
 
+  const cuando = appointment
+    ? dayjs(`${appointment.appointmentDate}T${appointment.appointmentTime}`)
+    : null
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar cita</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Estado</Label>
-            <Select value={status} onValueChange={(v) => v && setStatus(v as AppointmentStatus)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="scheduled">Programada</SelectItem>
-                <SelectItem value="confirmed">Confirmada</SelectItem>
-                <SelectItem value="completed">Completada</SelectItem>
-                <SelectItem value="cancelled">Cancelada</SelectItem>
-              </SelectContent>
-            </Select>
+    <Modal opened={appointment !== null} onClose={onClose} title="Editar cita" centered>
+      {appointment && (
+        <Stack gap="md">
+          <div>
+            <Text fw={600}>
+              {esClinico ? appointment.patientName : nombreDoctor(appointment.doctorName)}
+            </Text>
+            <Text size="sm" c="dimmed">
+              {cuando?.format('dddd D [de] MMMM [de] YYYY, HH:mm')}
+            </Text>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-notes">Notas</Label>
-            <Textarea id="edit-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={submit} disabled={update.isPending}>
-            {update.isPending ? 'Guardando…' : 'Guardar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+          <Select
+            label="Estado"
+            data={opciones}
+            value={estado}
+            onChange={(v) => v && setEstado(v as AppointmentStatus)}
+            allowDeselect={false}
+          />
+
+          <Textarea
+            label="Notas"
+            description={
+              esClinico
+                ? 'Lo que quieras dejar escrito de esta consulta'
+                : 'Lo que el doctor debería saber antes de verte'
+            }
+            autosize
+            minRows={3}
+            maxRows={8}
+            value={notas}
+            onChange={(e) => setNotas(e.currentTarget.value)}
+          />
+
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button onClick={guardar} loading={actualizar.isPending}>
+              Guardar
+            </Button>
+          </Group>
+        </Stack>
+      )}
+    </Modal>
   )
 }

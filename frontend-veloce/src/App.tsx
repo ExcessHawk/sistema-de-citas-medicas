@@ -11,6 +11,8 @@ import { AppointmentsPage } from '@/features/appointments/appointments'
 import { ProfilePage } from '@/features/profile/profile'
 import { MedicalHistoryPage } from '@/features/patients/medical-history'
 import { AdminPage } from '@/features/admin/admin'
+import { AgendaPage } from '@/features/agenda/agenda'
+import { SchedulePage } from '@/features/schedule/schedule'
 import { DemoEntryPage } from '@/features/demo/demo-entry'
 
 export default function App() {
@@ -35,7 +37,13 @@ export default function App() {
 
           {/* Clinician-only */}
           <Route element={<RoleRoute roles={['doctor', 'admin']} />}>
+            <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/patient/:patientId/history" element={<MedicalHistoryPage />} />
+          </Route>
+
+          {/* Doctor-only */}
+          <Route element={<RoleRoute roles={['doctor']} />}>
+            <Route path="/schedule" element={<SchedulePage />} />
           </Route>
 
           {/* Admin-only */}

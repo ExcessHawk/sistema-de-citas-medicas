@@ -5,7 +5,7 @@ el mapa y reserva; el doctor atiende y registra el historial; el administrador
 vigila el conjunto.
 
 Backend en **Bun sobre Veloce-TS** con Drizzle y PostgreSQL. Frontend en **React
-19 + Vite** con Tailwind y React Query.
+19 + Vite** con Mantine, React Query y Leaflet sobre OpenStreetMap.
 
 ## Qué hace
 

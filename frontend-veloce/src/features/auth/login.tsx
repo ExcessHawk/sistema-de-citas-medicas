@@ -2,18 +2,26 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
+import {
+  Anchor,
+  Button,
+  Card,
+  Center,
+  Group,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+  ThemeIcon,
+  Title,
+} from '@mantine/core'
 import { Stethoscope } from 'lucide-react'
 import { useAuth } from '@/shared/auth/auth-context'
-import { ApiError } from '@/shared/api/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { avisoError, avisoExito } from '@/shared/ui/avisos'
 
 const schema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(1, 'Contraseña requerida'),
+  email: z.string().email('Ese correo no se ve bien'),
+  password: z.string().min(1, 'Falta la contraseña'),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -29,49 +37,59 @@ export function LoginPage() {
   const onSubmit = async (values: FormValues) => {
     try {
       const user = await login(values)
-      toast.success(`Bienvenido, ${user.name}`)
-      navigate('/dashboard')
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Error al iniciar sesión')
+      avisoExito(`Bienvenido, ${user.name}`)
+      navigate('/dashboard', { replace: true })
+    } catch (e) {
+      avisoError(e, 'No se pudo entrar')
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex size-11 items-center justify-center rounded-full bg-primary/10">
-            <Stethoscope className="size-6 text-primary" />
-          </div>
-          <CardTitle>Iniciar sesión</CardTitle>
-          <CardDescription>Accede a tu cuenta del sistema médico</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" placeholder="tu@email.com" {...register('email')} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input id="password" type="password" placeholder="••••••••" {...register('password')} />
-              {errors.password && (
-                <p className="text-xs text-destructive">{errors.password.message}</p>
-              )}
-            </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Entrando…' : 'Entrar'}
-            </Button>
+    <Center mih="100dvh" px="md">
+      <Stack gap="lg" w="100%" maw={400}>
+        <Stack align="center" gap="xs">
+          <ThemeIcon variant="light" color="clinico" size={48} radius="md">
+            <Stethoscope size={26} />
+          </ThemeIcon>
+          <Title order={2}>Citas Médicas</Title>
+          <Text size="sm" c="dimmed">
+            Entra para ver tus consultas
+          </Text>
+        </Stack>
+
+        <Card>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Stack gap="md">
+              <TextInput
+                label="Correo"
+                placeholder="tu@correo.com"
+                autoComplete="email"
+                error={errors.email?.message}
+                {...register('email')}
+              />
+              <PasswordInput
+                label="Contraseña"
+                placeholder="Tu contraseña"
+                autoComplete="current-password"
+                error={errors.password?.message}
+                {...register('password')}
+              />
+              <Button type="submit" fullWidth loading={isSubmitting}>
+                Entrar
+              </Button>
+            </Stack>
           </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            ¿No tienes cuenta?{' '}
-            <Link to="/register" className="font-medium text-primary hover:underline">
-              Regístrate
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+        </Card>
+
+        <Group justify="center" gap={6}>
+          <Text size="sm" c="dimmed">
+            ¿No tienes cuenta?
+          </Text>
+          <Anchor component={Link} to="/register" size="sm" c="clinico">
+            Regístrate
+          </Anchor>
+        </Group>
+      </Stack>
+    </Center>
   )
 }

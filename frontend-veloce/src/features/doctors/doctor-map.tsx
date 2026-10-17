@@ -12,7 +12,8 @@ import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Doctor } from '@/shared/api/types'
-import { Button } from '@/components/ui/button'
+import { Button, Paper, Stack, Text } from '@mantine/core'
+import { nombreDoctor } from '@/shared/ui/theme'
 
 // Leaflet trae sus iconos como rutas relativas que el bundler no resuelve, así
 // que el marcador se dibuja en SVG y se acabó el problema.
@@ -59,20 +60,22 @@ export function DoctorMap({ doctors, onBook }: Props) {
 
   if (conUbicacion.length === 0) {
     return (
-      <div className="flex h-72 items-center justify-center rounded-lg border bg-muted/30 text-sm text-muted-foreground">
-        Ningún consultorio tiene ubicación registrada todavía.
-      </div>
+      <Paper h={288} withBorder radius="md" style={{ display: 'grid', placeItems: 'center' }}>
+        <Text size="sm" c="dimmed">
+          Ningún consultorio tiene ubicación registrada todavía.
+        </Text>
+      </Paper>
     )
   }
 
   return (
-    <div className="space-y-2">
-      <div className="h-80 overflow-hidden rounded-lg border">
+    <Stack gap="xs">
+      <Paper h={360} withBorder radius="md" style={{ overflow: 'hidden' }}>
         <MapContainer
           center={centro}
           zoom={11}
           scrollWheelZoom={false}
-          className="h-full w-full"
+          style={{ height: '100%', width: '100%' }}
           aria-label="Mapa de consultorios"
         >
           <TileLayer
@@ -83,17 +86,17 @@ export function DoctorMap({ doctors, onBook }: Props) {
           {conUbicacion.map(({ doctor, lat, lng }) => (
             <Marker key={doctor.id} position={[lat, lng]} icon={marcador}>
               <Popup>
-                <div className="space-y-1">
-                  <p className="font-medium">{doctor.name}</p>
-                  <p className="text-xs text-muted-foreground">{doctor.specialty}</p>
-                  <p className="text-xs">{doctor.address}</p>
+                <div style={{ display: 'grid', gap: 4 }}>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{nombreDoctor(doctor.name)}</p>
+                  <p style={{ margin: 0, fontSize: 12, opacity: 0.7 }}>{doctor.specialty}</p>
+                  <p style={{ margin: 0, fontSize: 12 }}>{doctor.address}</p>
                   {doctor.consultationFee && (
-                    <p className="text-xs">
+                    <p style={{ margin: 0, fontSize: 12 }}>
                       Consulta: ${Number(doctor.consultationFee).toLocaleString('es-MX')} MXN
                     </p>
                   )}
                   {onBook && (
-                    <Button size="sm" className="mt-1 w-full" onClick={() => onBook(doctor)}>
+                    <Button size="xs" fullWidth mt={6} onClick={() => onBook(doctor)}>
                       Agendar
                     </Button>
                   )}
@@ -102,14 +105,14 @@ export function DoctorMap({ doctors, onBook }: Props) {
             </Marker>
           ))}
         </MapContainer>
-      </div>
+      </Paper>
 
       {sinUbicacion > 0 && (
-        <p className="text-xs text-muted-foreground">
+        <Text size="xs" c="dimmed">
           {sinUbicacion} consultorio{sinUbicacion === 1 ? '' : 's'} sin ubicación registrada
           {sinUbicacion === 1 ? ' no aparece' : ' no aparecen'} en el mapa.
-        </p>
+        </Text>
       )}
-    </div>
+    </Stack>
   )
 }

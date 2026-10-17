@@ -47,7 +47,10 @@ export function useUpdateAppointment() {
 export function useCancelAppointment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => appointmentsApi.cancel(id),
+    // Cancelar pasa por update y no por delete: el motivo viaja con el cambio
+    // de estado, y DELETE no lleva cuerpo.
+    mutationFn: ({ id, motivo }: { id: number; motivo: string }) =>
+      appointmentsApi.update(id, { status: 'cancelled', cancellationReason: motivo }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY })
       qc.invalidateQueries({ queryKey: ['appointment-stats'] })

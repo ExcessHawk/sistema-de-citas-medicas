@@ -1,6 +1,5 @@
 /** Formatting + Spanish enum labels. */
-import { format, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
+import dayjs from 'dayjs'
 import type {
   AppointmentStatus,
   ConditionType,
@@ -13,12 +12,8 @@ import type {
 
 export function formatDate(value?: string | null): string {
   if (!value) return '—'
-  try {
-    const d = value.length <= 10 ? parseISO(value) : new Date(value)
-    return format(d, "d 'de' MMMM 'de' yyyy", { locale: es })
-  } catch {
-    return value
-  }
+  const d = dayjs(value)
+  return d.isValid() ? d.format('D [de] MMMM [de] YYYY') : value
 }
 
 export function formatTime(value?: string | null): string {

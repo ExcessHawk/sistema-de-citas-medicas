@@ -1,77 +1,117 @@
 import { Link } from 'react-router-dom'
-import { CalendarCheck, Clock, ShieldCheck, Stethoscope } from 'lucide-react'
-import { buttonVariants } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import {
+  Button,
+  Card,
+  Container,
+  Group,
+  SimpleGrid,
+  Stack,
+  Text,
+  ThemeIcon,
+  Title,
+} from '@mantine/core'
+import { CalendarCheck, Clock, MapPin, ShieldCheck, Stethoscope } from 'lucide-react'
 import { useAuth } from '@/shared/auth/auth-context'
-import { cn } from '@/lib/utils'
 
-const features = [
-  { icon: Stethoscope, title: 'Doctores verificados', desc: 'Encuentra especialistas por área.' },
-  { icon: CalendarCheck, title: 'Reserva en segundos', desc: 'Agenda según disponibilidad real.' },
-  { icon: Clock, title: 'Recordatorios', desc: 'Avisos por correo antes de tu cita.' },
-  { icon: ShieldCheck, title: 'Historial seguro', desc: 'Tu información clínica protegida.' },
+const VENTAJAS = [
+  {
+    icon: MapPin,
+    title: 'Ves dónde queda',
+    desc: 'Los consultorios en un mapa, antes de reservar.',
+  },
+  {
+    icon: CalendarCheck,
+    title: 'Escoges el hueco',
+    desc: 'Los horarios libres del doctor, sobre una cuadrícula.',
+  },
+  {
+    icon: Clock,
+    title: 'No se te olvida',
+    desc: 'Recordatorio por correo la víspera de tu cita.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Tu historial, tuyo',
+    desc: 'Consultas, estudios y padecimientos en un solo lugar.',
+  },
 ]
 
 export function HomePage() {
   const { isAuthenticated } = useAuth()
+
   return (
-    <div className="min-h-screen">
-      <header className="border-b">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <span className="flex items-center gap-2 font-semibold">
-            <Stethoscope className="size-5 text-primary" /> Citas Médicas
-          </span>
-          <div className="flex gap-2">
-            {isAuthenticated ? (
-              <Link to="/dashboard" className={cn(buttonVariants())}>
-                Ir al panel
-              </Link>
-            ) : (
-              <>
-                <Link to="/login" className={cn(buttonVariants({ variant: 'ghost' }))}>
-                  Entrar
-                </Link>
-                <Link to="/register" className={cn(buttonVariants())}>
-                  Crear cuenta
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
+    <div>
+      <header
+        style={{
+          borderBottom: '1px solid var(--mantine-color-default-border)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        <Container size="lg" h={56}>
+          <Group h="100%" justify="space-between">
+            <Group gap={8}>
+              <Stethoscope size={20} color="var(--mantine-color-clinico-6)" />
+              <Text fw={650}>Citas Médicas</Text>
+            </Group>
+
+            <Group gap="xs">
+              {isAuthenticated ? (
+                <Button component={Link} to="/dashboard" size="sm">
+                  Ir a mi panel
+                </Button>
+              ) : (
+                <>
+                  <Button component={Link} to="/login" variant="subtle" size="sm">
+                    Entrar
+                  </Button>
+                  <Button component={Link} to="/register" size="sm">
+                    Crear cuenta
+                  </Button>
+                </>
+              )}
+            </Group>
+          </Group>
+        </Container>
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 py-20 text-center">
-        <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl">
-          Tu salud, agendada sin complicaciones
-        </h1>
-        <p className="mx-auto mt-4 max-w-xl text-balance text-muted-foreground">
-          Reserva citas con especialistas, gestiona tu historial médico y recibe recordatorios, todo
-          en un solo lugar.
-        </p>
-        <div className="mt-8 flex justify-center gap-3">
-          <Link
-            to={isAuthenticated ? '/doctors' : '/register'}
-            className={cn(buttonVariants({ size: 'lg' }))}
-          >
-            Reservar una cita
-          </Link>
-          <Link to="/login" className={cn(buttonVariants({ size: 'lg', variant: 'outline' }))}>
-            Ya tengo cuenta
-          </Link>
-        </div>
-      </section>
+      <Container size="lg" py={80}>
+        <Stack align="center" gap="md" ta="center">
+          <Title order={1} fz={{ base: 32, sm: 44 }} maw={720} lh={1.15}>
+            Tu consulta, agendada sin llamadas ni esperas
+          </Title>
+          <Text c="dimmed" maw={560}>
+            Busca especialista, mira en el mapa dónde atiende, escoge el horario que te queda y
+            lleva tu historial contigo.
+          </Text>
+          <Group gap="sm" mt="md">
+            <Button component={Link} to={isAuthenticated ? '/doctors' : '/register'} size="md">
+              Reservar una cita
+            </Button>
+            <Button component={Link} to="/login" size="md" variant="default">
+              Ya tengo cuenta
+            </Button>
+          </Group>
+        </Stack>
+      </Container>
 
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-20 sm:grid-cols-2 lg:grid-cols-4">
-        {features.map((f) => (
-          <Card key={f.title}>
-            <CardContent className="pt-6">
-              <f.icon className="mb-3 size-7 text-primary" />
-              <h3 className="font-semibold">{f.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
+      <Container size="lg" pb={80}>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+          {VENTAJAS.map(({ icon: Icono, title, desc }) => (
+            <Card key={title}>
+              <ThemeIcon variant="light" color="clinico" size={38} radius="md" mb="sm">
+                <Icono size={19} />
+              </ThemeIcon>
+              <Text fw={600}>{title}</Text>
+              <Text size="sm" c="dimmed" mt={4}>
+                {desc}
+              </Text>
+            </Card>
+          ))}
+        </SimpleGrid>
+      </Container>
     </div>
   )
 }

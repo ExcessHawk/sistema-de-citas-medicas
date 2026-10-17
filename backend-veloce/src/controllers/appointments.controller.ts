@@ -65,6 +65,7 @@ export class AppointmentsController {
           appointmentTime: appointments.appointmentTime,
           status: appointments.status,
           notes: appointments.notes,
+          cancellationReason: appointments.cancellationReason,
           createdAt: appointments.createdAt,
           updatedAt: appointments.updatedAt,
           patientName: patient.name,
@@ -87,6 +88,7 @@ export class AppointmentsController {
         appointmentTime: appointments.appointmentTime,
         status: appointments.status,
         notes: appointments.notes,
+        cancellationReason: appointments.cancellationReason,
         createdAt: appointments.createdAt,
         updatedAt: appointments.updatedAt,
         doctorName: doctorUser.name,
@@ -145,6 +147,7 @@ export class AppointmentsController {
         appointmentTime: appointments.appointmentTime,
         status: appointments.status,
         notes: appointments.notes,
+        cancellationReason: appointments.cancellationReason,
         createdAt: appointments.createdAt,
         updatedAt: appointments.updatedAt,
         patientName: patient.name,
@@ -265,6 +268,10 @@ export class AppointmentsController {
     const patch: Record<string, unknown> = {};
     if (body.status !== undefined) patch.status = body.status;
     if (body.notes !== undefined) patch.notes = body.notes;
+    // El motivo solo tiene sentido junto a la cancelación, y reabrir la cita
+    // lo borra para que no quede un motivo huérfano contando algo que ya no pasó.
+    if (body.cancellationReason !== undefined) patch.cancellationReason = body.cancellationReason;
+    if (body.status !== undefined && body.status !== 'cancelled') patch.cancellationReason = null;
     if (Object.keys(patch).length === 0) throw new BadRequestException('No hay campos para actualizar');
     patch.updatedAt = new Date();
 

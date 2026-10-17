@@ -1,145 +1,239 @@
-import { useState } from 'react'
-import { toast } from 'sonner'
+/**
+ * Reservar una cita.
+ *
+ * El horario se escoge sobre una cuadrícula, no en una lista desplegable: así
+ * se ve de un golpe qué queda libre y qué está tomado, que es la pregunta
+ * real de quien agenda.
+ */
+import { useEffect, useState } from 'react'
+import {
+  Alert,
+  Badge,
+  Button,
+  Divider,
+  Group,
+  Loader,
+  Modal,
+  SimpleGrid,
+  Stack,
+  Text,
+  Textarea,
+  UnstyledButton,
+} from '@mantine/core'
+import { DatePicker } from '@mantine/dates'
+import { CalendarClock, Info, MapPin } from 'lucide-react'
+import dayjs from 'dayjs'
 import { useDoctorAvailability } from './hooks'
 import { useCreateAppointment } from '@/features/appointments/hooks'
-import { ApiError } from '@/shared/api/client'
+import { avisoError, avisoExito } from '@/shared/ui/avisos'
+import { nombreDoctor } from '@/shared/ui/theme'
 import type { Doctor } from '@/shared/api/types'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+
+const FORMATO = 'YYYY-MM-DD'
 
 export function BookAppointmentDialog({
   doctor,
-  open,
-  onOpenChange,
+  onClose,
 }: {
   doctor: Doctor | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  onClose: () => void
 }) {
-  const [date, setDate] = useState('')
-  const [time, setTime] = useState('')
-  const [notes, setNotes] = useState('')
-  const { data: availability } = useDoctorAvailability(doctor?.id ?? null, date || undefined)
-  const create = useCreateAppointment()
+  const [fecha, setFecha] = useState<Date | null>(null)
+  const [hora, setHora] = useState<string | null>(null)
+  const [notas, setNotas] = useState('')
 
-  const slots = date ? availability?.availableSlots ?? [] : doctor?.availableHours ?? []
-  const today = new Date().toISOString().slice(0, 10)
+  const crear = useCreateAppointment()
+  const fechaTexto = fecha ? dayjs(fecha).format(FORMATO) : undefined
+  const { data: disponibilidad, isFetching } = useDoctorAvailability(
+    doctor?.id ?? null,
+    fechaTexto,
+  )
 
-  const reset = () => {
-    setDate('')
-    setTime('')
-    setNotes('')
-  }
+  // Al cambiar de doctor o de día, la hora elegida deja de tener sentido.
+  useEffect(() => {
+    setHora(null)
+  }, [doctor?.id, fechaTexto])
 
-  const submit = async () => {
-    if (!doctor || !date || !time) {
-      toast.error('Selecciona fecha y hora')
-      return
+  useEffect(() => {
+    if (!doctor) {
+      setFecha(null)
+      setNotas('')
     }
+  }, [doctor])
+
+  const libres = disponibilidad?.availableSlots ?? disponibilidad?.availableHours ?? []
+  const tomadas = disponibilidad?.bookedTimes ?? []
+  const todas = [...new Set([...libres, ...tomadas])].sort()
+
+  const reservar = async () => {
+    if (!doctor || !fechaTexto || !hora) return
     try {
-      await create.mutateAsync({
+      await crear.mutateAsync({
         doctorId: doctor.id,
-        appointmentDate: date,
-        appointmentTime: time,
-        notes: notes || undefined,
+        appointmentDate: fechaTexto,
+        appointmentTime: hora,
+        ...(notas.trim() ? { notes: notas.trim() } : {}),
       })
-      toast.success('Cita programada')
-      reset()
-      onOpenChange(false)
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Error al reservar')
+      avisoExito('Cita reservada', `${dayjs(fecha).format('D [de] MMMM')} a las ${hora}`)
+      onClose()
+    } catch (e) {
+      avisoError(e, 'No se pudo reservar')
     }
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        if (!o) reset()
-        onOpenChange(o)
-      }}
+    <Modal
+      opened={doctor !== null}
+      onClose={onClose}
+      title={doctor ? `Reservar con ${nombreDoctor(doctor.name)}` : ''}
+      size="lg"
+      centered
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Reservar con Dr. {doctor?.name}</DialogTitle>
-          <DialogDescription>{doctor?.specialty}</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="date">Fecha</Label>
-            <Input
-              id="date"
-              type="date"
-              min={today}
-              value={date}
-              onChange={(e) => {
-                setDate(e.target.value)
-                setTime('')
-              }}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Hora</Label>
-            <Select
-              value={time}
-              onValueChange={(v) => setTime(v ?? '')}
-              disabled={!date || slots.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={date ? 'Selecciona horario' : 'Elige una fecha primero'} />
-              </SelectTrigger>
-              <SelectContent>
-                {slots.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {date && slots.length === 0 && (
-              <p className="text-xs text-muted-foreground">No hay horarios disponibles ese día.</p>
+      {doctor && (
+        <Stack gap="md">
+          <Group gap="xs" wrap="wrap">
+            {doctor.specialty && (
+              <Badge variant="light" color="clinico">
+                {doctor.specialty}
+              </Badge>
             )}
+            {doctor.consultationFee && (
+              <Badge variant="default">
+                ${Number(doctor.consultationFee).toLocaleString('es-MX')} MXN
+              </Badge>
+            )}
+          </Group>
+
+          {doctor.address && (
+            <Group gap={6} c="dimmed" wrap="nowrap">
+              <MapPin size={14} />
+              <Text size="sm" lineClamp={2}>
+                {doctor.address}
+              </Text>
+            </Group>
+          )}
+
+          <Divider />
+
+          <div>
+            <Text fw={600} size="sm" mb="xs">
+              1. Escoge el día
+            </Text>
+            <Group justify="center">
+              <DatePicker
+                value={fecha}
+                onChange={(v) => setFecha(v ? new Date(v) : null)}
+                minDate={new Date()}
+                maxDate={dayjs().add(3, 'month').toDate()}
+                // Sin domingos: ningún consultorio de la demostración abre.
+                excludeDate={(d) => dayjs(d).day() === 0}
+              />
+            </Group>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="notes">Notas (opcional)</Label>
+          {fecha && (
+            <div>
+              <Group justify="space-between" mb="xs">
+                <Text fw={600} size="sm">
+                  2. Escoge la hora
+                </Text>
+                {isFetching && <Loader size="xs" color="clinico" />}
+              </Group>
+
+              {todas.length === 0 && !isFetching ? (
+                <Alert color="gray" icon={<Info size={16} />}>
+                  Este doctor no publicó horarios para ese día. Prueba con otra fecha.
+                </Alert>
+              ) : (
+                <>
+                  <SimpleGrid cols={{ base: 3, sm: 4, md: 5 }} spacing="xs">
+                    {todas.map((slot) => {
+                      const ocupada = tomadas.includes(slot)
+                      const elegida = hora === slot
+                      return (
+                        <UnstyledButton
+                          key={slot}
+                          disabled={ocupada}
+                          onClick={() => setHora(slot)}
+                          aria-pressed={elegida}
+                          aria-label={ocupada ? `${slot}, ocupado` : `${slot}, libre`}
+                          style={{
+                            padding: '8px 4px',
+                            borderRadius: 'var(--mantine-radius-md)',
+                            textAlign: 'center',
+                            fontSize: 14,
+                            fontWeight: elegida ? 600 : 400,
+                            cursor: ocupada ? 'not-allowed' : 'pointer',
+                            border: `1px solid ${
+                              elegida
+                                ? 'var(--mantine-color-clinico-6)'
+                                : 'var(--mantine-color-default-border)'
+                            }`,
+                            backgroundColor: elegida
+                              ? 'var(--mantine-color-clinico-light)'
+                              : ocupada
+                                ? 'var(--mantine-color-default-hover)'
+                                : 'transparent',
+                            color: ocupada
+                              ? 'var(--mantine-color-dimmed)'
+                              : elegida
+                                ? 'var(--mantine-color-clinico-light-color)'
+                                : undefined,
+                            textDecoration: ocupada ? 'line-through' : undefined,
+                            opacity: ocupada ? 0.6 : 1,
+                          }}
+                        >
+                          {slot}
+                        </UnstyledButton>
+                      )
+                    })}
+                  </SimpleGrid>
+
+                  {tomadas.length > 0 && (
+                    <Text size="xs" c="dimmed" mt="xs">
+                      Los horarios tachados ya están ocupados.
+                    </Text>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {hora && (
             <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Motivo de la consulta…"
+              label="Motivo de la consulta"
+              description="Opcional, pero le ahorra preguntas al doctor"
+              placeholder="Qué te trae, desde cuándo, si ya tomaste algo…"
+              autosize
+              minRows={2}
+              maxRows={5}
+              value={notas}
+              onChange={(e) => setNotas(e.currentTarget.value)}
             />
-          </div>
-        </div>
+          )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={submit} disabled={create.isPending}>
-            {create.isPending ? 'Reservando…' : 'Confirmar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Group justify="space-between" mt="sm">
+            <Text size="sm" c="dimmed">
+              {hora
+                ? `${dayjs(fecha).format('dddd D [de] MMMM')} a las ${hora}`
+                : 'Falta escoger día y hora'}
+            </Text>
+            <Group gap="sm">
+              <Button variant="default" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button
+                leftSection={<CalendarClock size={16} />}
+                disabled={!hora}
+                loading={crear.isPending}
+                onClick={reservar}
+              >
+                Reservar
+              </Button>
+            </Group>
+          </Group>
+        </Stack>
+      )}
+    </Modal>
   )
 }
